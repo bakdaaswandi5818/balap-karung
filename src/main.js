@@ -23,6 +23,8 @@ let winner = null;
 let animationTicker = null;
 let soundEffects = new SoundEffects();
 let jumpSoundFrameCounter = 0;
+let backgroundContainer = null;
+let participantsContainer = null;
 
 // DOM elements
 const participantsTextarea = document.getElementById('participants');
@@ -64,6 +66,14 @@ function initPixiApp() {
     
     // Log renderer info for debugging
     console.log('PixiJS Renderer:', app.renderer.type === PIXI.RENDERER_TYPE.WEBGL ? 'WebGL' : 'Canvas');
+    
+    // Create layer containers for proper z-ordering
+    backgroundContainer = new PIXI.Container();
+    participantsContainer = new PIXI.Container();
+    
+    // Add containers to stage in correct order (background first, then participants on top)
+    app.stage.addChild(backgroundContainer);
+    app.stage.addChild(participantsContainer);
     
     // Draw village field background
     drawVillageBackground(width, height);
@@ -109,7 +119,7 @@ function drawVillageBackground(width, height) {
     graphics.drawCircle(width * 0.85 + 20, height * 0.2, 20);
     graphics.endFill();
     
-    app.stage.addChild(graphics);
+    backgroundContainer.addChild(graphics);
 }
 
 // Draw village elements (trees, houses, fences)
@@ -187,7 +197,7 @@ function drawVillageElements(width, height) {
         }
     }
     
-    app.stage.addChild(graphics);
+    backgroundContainer.addChild(graphics);
 }
 
 // Draw the race track with start and finish lines
@@ -220,7 +230,7 @@ function drawRaceTrack(width, height) {
     });
     startText.x = 10;
     startText.y = height * 0.45;
-    app.stage.addChild(startText);
+    backgroundContainer.addChild(startText);
     
     // Finish line (checkered pattern simulation)
     graphics.beginFill(0x000000);
@@ -234,9 +244,9 @@ function drawRaceTrack(width, height) {
     });
     finishText.x = width - 90;
     finishText.y = height * 0.45;
-    app.stage.addChild(finishText);
+    backgroundContainer.addChild(finishText);
     
-    app.stage.addChild(graphics);
+    backgroundContainer.addChild(graphics);
 }
 
 // Create a sack icon using PIXI Graphics
@@ -484,8 +494,8 @@ function createParticipants(names) {
     });
     participants = [];
     
-    if (!app || !app.stage) {
-        console.error('PixiJS app not initialized');
+    if (!app || !participantsContainer) {
+        console.error('PixiJS app or participants container not initialized');
         return;
     }
     
@@ -495,7 +505,7 @@ function createParticipants(names) {
     names.forEach((name, index) => {
         const sprite = createParticipant(name, index, names.length);
         participants.push(sprite);
-        app.stage.addChild(sprite);
+        participantsContainer.addChild(sprite);
     });
     
     // Position them
