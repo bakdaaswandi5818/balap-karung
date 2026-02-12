@@ -46,6 +46,7 @@ function initPixiApp() {
     const width = raceContainer.offsetWidth || 1200;
     const height = 600;
     
+    // Create PixiJS application with settings for better browser compatibility
     app = new PIXI.Application({
         width,
         height,
@@ -53,10 +54,16 @@ function initPixiApp() {
         antialias: true,
         resolution: window.devicePixelRatio || 1,
         autoDensity: true,
+        backgroundAlpha: 1,
+        preserveDrawingBuffer: false,
+        clearBeforeRender: true,
     });
     
     raceContainer.innerHTML = '';
     raceContainer.appendChild(app.view);
+    
+    // Log renderer info for debugging
+    console.log('PixiJS Renderer:', app.renderer.type === PIXI.RENDERER_TYPE.WEBGL ? 'WebGL' : 'Canvas');
     
     // Draw village field background
     drawVillageBackground(width, height);
@@ -322,6 +329,8 @@ function positionParticipants(participantSprites) {
 
 // Start the race animation
 function startRace() {
+    console.log('startRace called, participants:', participants.length);
+    
     if (participants.length === 0) {
         alert('Please add participant names first!');
         return;
@@ -345,6 +354,14 @@ function startRace() {
     const startX = 80;
     const raceDistance = finishLineX - startX;
     
+    console.log('Race config:', {
+        duration: config.duration,
+        width,
+        finishLineX,
+        startX,
+        raceDistance
+    });
+    
     // Assign random speeds to participants
     participants.forEach(sprite => {
         // Random speed variation (±30%)
@@ -359,11 +376,18 @@ function startRace() {
     
     // Animation ticker
     let frameCount = 0;
+    let loggedStart = false;
     animationTicker = function animate() {
         if (!raceStarted || raceFinished) return;
         
         frameCount++;
         jumpSoundFrameCounter++;
+        
+        // Log once to confirm animation is running
+        if (!loggedStart) {
+            console.log('Animation ticker started, participants:', participants.length);
+            loggedStart = true;
+        }
         
         // Play jump sound periodically (not every frame, to avoid audio overload)
         // Play approximately every 20 frames (about 3 jumps per second)
@@ -388,6 +412,7 @@ function startRace() {
                     data.finished = true;
                     winner = data.name;
                     raceFinished = true;
+                    console.log('Winner detected:', winner);
                     showWinner(winner);
                     // Play finish sound and crowd cheer
                     soundEffects.playFinishSound();
@@ -397,6 +422,7 @@ function startRace() {
         });
     };
     app.ticker.add(animationTicker);
+    console.log('Animation ticker added to PixiJS app, ticker running:', app.ticker.started);
 }
 
 // Reset the race
@@ -458,6 +484,13 @@ function createParticipants(names) {
     });
     participants = [];
     
+    if (!app || !app.stage) {
+        console.error('PixiJS app not initialized');
+        return;
+    }
+    
+    console.log(`Creating ${names.length} participants`);
+    
     // Create new participants
     names.forEach((name, index) => {
         const sprite = createParticipant(name, index, names.length);
@@ -467,6 +500,9 @@ function createParticipants(names) {
     
     // Position them
     positionParticipants(participants);
+    
+    console.log(`${participants.length} participants created and positioned`);
+}
 }
 
 // Generate 200 sample names
