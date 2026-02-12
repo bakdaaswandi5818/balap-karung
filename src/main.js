@@ -1,5 +1,6 @@
 import './style.css';
 import * as PIXI from 'pixi.js';
+import SoundEffects from './soundEffects.js';
 
 // Race configuration
 const RACE_CONFIG = {
@@ -20,6 +21,8 @@ let raceStarted = false;
 let raceFinished = false;
 let winner = null;
 let animationTicker = null;
+let soundEffects = new SoundEffects();
+let jumpSoundFrameCounter = 0;
 
 // DOM elements
 const participantsTextarea = document.getElementById('participants');
@@ -32,6 +35,7 @@ const winnerModal = document.getElementById('winnerModal');
 const winnerNameEl = document.getElementById('winnerName');
 const closeModalBtn = document.getElementById('closeModal');
 const raceContainer = document.getElementById('raceContainer');
+const toggleSoundBtn = document.getElementById('toggleSound');
 
 // Initialize PixiJS Application
 function initPixiApp() {
@@ -45,7 +49,7 @@ function initPixiApp() {
     app = new PIXI.Application({
         width,
         height,
-        backgroundColor: 0x87CEEB, // Sky blue
+        backgroundColor: 0x87CEEB, // Sky blue - brighter for outdoor village
         antialias: true,
         resolution: window.devicePixelRatio || 1,
         autoDensity: true,
@@ -54,17 +58,147 @@ function initPixiApp() {
     raceContainer.innerHTML = '';
     raceContainer.appendChild(app.view);
     
+    // Draw village field background
+    drawVillageBackground(width, height);
     // Draw race track
     drawRaceTrack(width, height);
+    // Draw village elements
+    drawVillageElements(width, height);
+}
+
+// Draw village field background
+function drawVillageBackground(width, height) {
+    const graphics = new PIXI.Graphics();
+    
+    // Sky gradient effect (lighter at top, darker at horizon)
+    const skyTop = 0x87CEEB;
+    const skyHorizon = 0xB0E0E6;
+    
+    // Draw sky with gradient simulation
+    for (let i = 0; i < height * 0.5; i++) {
+        const ratio = i / (height * 0.5);
+        const r = Math.floor(135 + (176 - 135) * ratio);
+        const g = Math.floor(206 + (224 - 206) * ratio);
+        const b = Math.floor(235 + (230 - 235) * ratio);
+        const color = (r << 16) + (g << 8) + b;
+        
+        graphics.beginFill(color);
+        graphics.drawRect(0, i, width, 1);
+        graphics.endFill();
+    }
+    
+    // Add some clouds
+    graphics.beginFill(0xFFFFFF, 0.6);
+    // Cloud 1
+    graphics.drawCircle(width * 0.2, height * 0.15, 30);
+    graphics.drawCircle(width * 0.2 + 25, height * 0.15, 25);
+    graphics.drawCircle(width * 0.2 + 45, height * 0.15, 20);
+    // Cloud 2
+    graphics.drawCircle(width * 0.6, height * 0.1, 35);
+    graphics.drawCircle(width * 0.6 + 30, height * 0.1, 30);
+    graphics.drawCircle(width * 0.6 + 55, height * 0.1, 25);
+    // Cloud 3
+    graphics.drawCircle(width * 0.85, height * 0.2, 25);
+    graphics.drawCircle(width * 0.85 + 20, height * 0.2, 20);
+    graphics.endFill();
+    
+    app.stage.addChild(graphics);
+}
+
+// Draw village elements (trees, houses, fences)
+function drawVillageElements(width, height) {
+    const graphics = new PIXI.Graphics();
+    
+    // Draw distant mountains/hills
+    graphics.beginFill(0x228B22, 0.3);
+    graphics.moveTo(0, height * 0.5);
+    graphics.lineTo(width * 0.3, height * 0.35);
+    graphics.lineTo(width * 0.5, height * 0.4);
+    graphics.lineTo(width * 0.7, height * 0.3);
+    graphics.lineTo(width, height * 0.45);
+    graphics.lineTo(width, height * 0.5);
+    graphics.closePath();
+    graphics.endFill();
+    
+    // Draw simple trees in background
+    const treePositions = [
+        { x: width * 0.1, y: height * 0.45 },
+        { x: width * 0.25, y: height * 0.48 },
+        { x: width * 0.88, y: height * 0.46 },
+        { x: width * 0.95, y: height * 0.47 }
+    ];
+    
+    treePositions.forEach(pos => {
+        // Tree trunk
+        graphics.beginFill(0x8B4513);
+        graphics.drawRect(pos.x - 3, pos.y, 6, 25);
+        graphics.endFill();
+        
+        // Tree foliage
+        graphics.beginFill(0x228B22);
+        graphics.drawCircle(pos.x, pos.y - 5, 12);
+        graphics.drawCircle(pos.x - 8, pos.y + 5, 10);
+        graphics.drawCircle(pos.x + 8, pos.y + 5, 10);
+        graphics.endFill();
+    });
+    
+    // Draw simple village house on the side
+    const houseX = width * 0.05;
+    const houseY = height * 0.48;
+    
+    // House body
+    graphics.beginFill(0xD2691E);
+    graphics.drawRect(houseX, houseY, 40, 30);
+    graphics.endFill();
+    
+    // House roof
+    graphics.beginFill(0x8B4513);
+    graphics.moveTo(houseX - 5, houseY);
+    graphics.lineTo(houseX + 20, houseY - 15);
+    graphics.lineTo(houseX + 45, houseY);
+    graphics.closePath();
+    graphics.endFill();
+    
+    // Window
+    graphics.beginFill(0x87CEEB);
+    graphics.drawRect(houseX + 10, houseY + 10, 8, 8);
+    graphics.drawRect(houseX + 22, houseY + 10, 8, 8);
+    graphics.endFill();
+    
+    // Draw wooden fence posts
+    for (let i = 0; i < 10; i++) {
+        const fenceX = 100 + i * 30;
+        if (fenceX < width - 100) {
+            graphics.beginFill(0x8B4513);
+            graphics.drawRect(fenceX, height * 0.52, 4, 15);
+            graphics.endFill();
+            
+            // Horizontal fence rail
+            graphics.beginFill(0x8B4513);
+            graphics.drawRect(fenceX, height * 0.54, 28, 2);
+            graphics.endFill();
+        }
+    }
+    
+    app.stage.addChild(graphics);
 }
 
 // Draw the race track with start and finish lines
 function drawRaceTrack(width, height) {
     const graphics = new PIXI.Graphics();
     
-    // Ground/track
-    graphics.beginFill(0x90EE90); // Light green
+    // Ground/track - village field (more brownish-green)
+    graphics.beginFill(0x9ACD32); // Yellow-green grass
     graphics.drawRect(0, height * 0.6, width, height * 0.4);
+    graphics.endFill();
+    
+    // Add some grass texture with darker green patches
+    graphics.beginFill(0x6B8E23, 0.3);
+    for (let i = 0; i < 20; i++) {
+        const x = Math.random() * width;
+        const y = height * 0.6 + Math.random() * (height * 0.4);
+        graphics.drawCircle(x, y, 10 + Math.random() * 10);
+    }
     graphics.endFill();
     
     // Start line (red)
@@ -193,10 +327,17 @@ function startRace() {
         return;
     }
     
+    // Initialize sound effects
+    soundEffects.init();
+    
+    // Play start sound (whistle)
+    soundEffects.playStartSound();
+    
     raceStarted = true;
     raceFinished = false;
     winner = null;
     startRaceBtn.disabled = true;
+    jumpSoundFrameCounter = 0;
     
     const config = RACE_CONFIG[durationSelect.value];
     const width = app.view.width;
@@ -213,6 +354,7 @@ function startRace() {
         sprite.participantData.progress = 0;
         sprite.participantData.jumpOffset = Math.random() * Math.PI * 2; // Random jump phase
         sprite.participantData.finished = false;
+        sprite.participantData.lastJumpPhase = 0; // Track jump phase for sound
     });
     
     // Animation ticker
@@ -221,6 +363,13 @@ function startRace() {
         if (!raceStarted || raceFinished) return;
         
         frameCount++;
+        jumpSoundFrameCounter++;
+        
+        // Play jump sound periodically (not every frame, to avoid audio overload)
+        // Play approximately every 20 frames (about 3 jumps per second)
+        if (jumpSoundFrameCounter % 20 === 0) {
+            soundEffects.playJumpSound();
+        }
         
         participants.forEach(sprite => {
             const data = sprite.participantData;
@@ -240,6 +389,9 @@ function startRace() {
                     winner = data.name;
                     raceFinished = true;
                     showWinner(winner);
+                    // Play finish sound and crowd cheer
+                    soundEffects.playFinishSound();
+                    setTimeout(() => soundEffects.playCrowdCheer(), 300);
                 }
             }
         });
@@ -360,6 +512,15 @@ resetRaceBtn.addEventListener('click', resetRace);
 generateNamesBtn.addEventListener('click', generateSampleNames);
 participantsTextarea.addEventListener('input', updateParticipantCount);
 closeModalBtn.addEventListener('click', closeWinnerModal);
+
+// Toggle sound effects
+toggleSoundBtn.addEventListener('click', () => {
+    const enabled = soundEffects.toggleSound();
+    toggleSoundBtn.textContent = enabled ? '🔊 Sound ON' : '🔇 Sound OFF';
+    toggleSoundBtn.className = enabled 
+        ? 'px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition'
+        : 'px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition';
+});
 
 // Close modal when clicking outside
 winnerModal.addEventListener('click', (e) => {
