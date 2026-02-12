@@ -1,0 +1,24 @@
+{
+  "name": "balap-karung",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Sack Race Web App using PixiJS and Tailwind CSS",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": ["sack-race", "pixijs", "tailwind"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.33",
+    "tailwindcss": "^3.4.1",
+    "vite": "^5.0.12"
+  },
+  "dependencies": {
+    "pixi.js": "^7.3.3"
+  }
+}
