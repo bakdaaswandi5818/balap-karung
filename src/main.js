@@ -503,7 +503,6 @@ function createParticipants(names) {
     
     console.log(`${participants.length} participants created and positioned`);
 }
-}
 
 // Generate 200 sample names
 function generateSampleNames() {
