@@ -1,6 +1,7 @@
 {
   "name": "balap-karung",
   "version": "1.0.0",
+  "type": "module",
   "description": "Sack Race Web App using PixiJS and Tailwind CSS",
   "main": "index.html",
   "scripts": {

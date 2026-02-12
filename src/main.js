@@ -8,12 +8,18 @@ const RACE_CONFIG = {
     slow: { duration: 60000, baseSpeed: 0.25 }
 };
 
+// Animation constants
+const FPS_60_FRAME_TIME = 16.67; // milliseconds per frame at 60fps
+const JUMP_SPEED = 0.15;
+const JUMP_HEIGHT = 15;
+
 // Global state
 let app = null;
 let participants = [];
 let raceStarted = false;
 let raceFinished = false;
 let winner = null;
+let animationTicker = null;
 
 // DOM elements
 const participantsTextarea = document.getElementById('participants');
@@ -203,7 +209,7 @@ function startRace() {
         // Random speed variation (±30%)
         const speedVariation = 0.7 + Math.random() * 0.6;
         const targetSpeed = config.baseSpeed * speedVariation;
-        sprite.participantData.speed = (raceDistance / config.duration) * targetSpeed * 16.67; // 60fps adjustment
+        sprite.participantData.speed = (raceDistance / config.duration) * targetSpeed * FPS_60_FRAME_TIME;
         sprite.participantData.progress = 0;
         sprite.participantData.jumpOffset = Math.random() * Math.PI * 2; // Random jump phase
         sprite.participantData.finished = false;
@@ -211,7 +217,7 @@ function startRace() {
     
     // Animation ticker
     let frameCount = 0;
-    app.ticker.add(function animate() {
+    animationTicker = function animate() {
         if (!raceStarted || raceFinished) return;
         
         frameCount++;
@@ -225,9 +231,7 @@ function startRace() {
                 data.progress = sprite.x - startX;
                 
                 // Jumping animation (sine wave on Y-axis)
-                const jumpSpeed = 0.15;
-                const jumpHeight = 15;
-                const jumpY = Math.sin(frameCount * jumpSpeed + data.jumpOffset) * jumpHeight;
+                const jumpY = Math.sin(frameCount * JUMP_SPEED + data.jumpOffset) * JUMP_HEIGHT;
                 sprite.y = data.baseY + jumpY;
                 
                 // Check if crossed finish line
@@ -239,7 +243,8 @@ function startRace() {
                 }
             }
         });
-    });
+    };
+    app.ticker.add(animationTicker);
 }
 
 // Reset the race
@@ -250,6 +255,10 @@ function resetRace() {
     startRaceBtn.disabled = false;
     
     if (app && app.ticker) {
+        if (animationTicker) {
+            app.ticker.remove(animationTicker);
+            animationTicker = null;
+        }
         app.ticker.stop();
         app.ticker.start();
     }
